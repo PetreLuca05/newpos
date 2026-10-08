@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comandă la masă</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<header><strong id="title">…</strong><span id="tableName"></span><span id="me" class="muted"></span></header>
+<main>
+  <div id="error" class="box hidden" style="color:#c33"></div>
+
+  <section id="join" class="box hidden">
+    <h2>Bun venit!</h2>
+    <p id="others" class="muted"></p>
+    <form id="joinForm">
+      <p><label>Numele sau o poreclă (apare pe nota mesei)<br><input id="name" maxlength="24" required autocomplete="off"></label></p>
+      <p><label><input type="checkbox" id="consent" required> Am citit <a href="/confidentialitate" target="_blank">informarea privind datele personale</a>. Numele este folosit doar pentru împărțirea notei și este anonimizat automat.</label></p>
+      <button class="primary">Intră la masă</button>
+    </form>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="row noprint" style="margin-bottom:8px">
+      <button data-tab="menu">Meniu</button>
+      <button data-tab="table">Masa / Nota</button>
+      <button id="callWaiter">Cheamă ospătarul</button>
+      <button id="askBill">Cere nota</button>
+    </div>
+
+    <div id="tab-menu">
+      <div id="cats" class="row" style="margin-bottom:8px"></div>
+      <div id="menu"></div>
+    </div>
+
+    <div id="tab-table" class="hidden">
+      <div id="tableView"></div>
+      <p><button id="forget" class="muted">Șterge-mi numele (GDPR)</button></p>
+    </div>
+
+    <div id="cart" class="box hidden" style="position:sticky;bottom:0">
+      <h3>Comanda mea</h3>
+      <div id="cartLines"></div>
+      <div class="row"><strong id="cartTotal"></strong><button id="send" class="primary">Trimite comanda</button><button id="clearCart">Golește</button></div>
+    </div>
+  </section>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/guest.js"></script>
+</body>
+</html>

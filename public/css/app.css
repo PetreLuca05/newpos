@@ -1,0 +1,28 @@
+/* Minimal styling — functional only, to be redesigned later. */
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.4 system-ui, sans-serif; color: #222; background: #fafafa; }
+header { padding: 8px 12px; background: #333; color: #fff; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+header a { color: #fff; }
+main { padding: 12px; }
+h1, h2, h3 { margin: 8px 0; }
+button { font: inherit; padding: 6px 10px; cursor: pointer; border: 1px solid #888; background: #fff; border-radius: 4px; }
+button.primary { background: #2a6; color: #fff; border-color: #2a6; }
+button.danger { background: #c33; color: #fff; border-color: #c33; }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; padding: 5px; border: 1px solid #aaa; border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; }
+td, th { border-bottom: 1px solid #ddd; padding: 4px 6px; text-align: left; vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.muted { color: #777; font-size: 13px; }
+.box { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+.badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 12px; background: #eee; }
+.st-new { background: #fd5; } .st-accepted { background: #9cf; } .st-served { background: #9d9; } .st-rejected { background: #f99; }
+.hidden { display: none !important; }
+.toast { position: fixed; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 50; }
+.toast div { background: #333; color: #fff; padding: 8px 12px; border-radius: 4px; }
+.dialog { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: flex-start; justify-content: center; padding: 20px 8px; overflow: auto; z-index: 40; }
+.dialog > div { background: #fff; padding: 14px; border-radius: 6px; width: 100%; max-width: 720px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+.receipt { font-family: monospace; white-space: pre-wrap; font-size: 13px; }
+@media print { header, button, .noprint { display: none !important; } .dialog { position: static; background: none; padding: 0; } }

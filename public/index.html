@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>newpos</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<header><strong>newpos</strong> <a href="/confidentialitate">Confidențialitate</a></header>
+<main><h2>Locații</h2><div id="list"></div>
+<p class="muted">PIN-uri de test: manager 1234 · ospătari 1111 / 2222 · bucătărie 3333</p></main>
+<script src="/static/js/common.js"></script>
+<script>
+fetch('/api/locations').then((r) => r.json()).then((list) => {
+  $('#list').innerHTML = list.map((l) => `<div class="box"><h3>${esc(l.name)} — ${esc(l.tagline)}</h3><p class="muted">${esc(l.address)}</p>
+    <p><a href="/l/${l.id}/pos">POS</a> · <a href="/l/${l.id}/kds?station=kitchen">Bucătărie</a> · <a href="/l/${l.id}/kds?station=bar">Bar</a> · <a href="/l/${l.id}/qr">Coduri QR</a></p></div>`).join('');
+});
+</script>
+</body>
+</html>

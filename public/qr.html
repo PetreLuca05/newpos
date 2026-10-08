@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coduri QR mese</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  #grid .box { text-align: center; page-break-inside: avoid; }
+  #grid svg { width: 180px; height: 180px; }
+</style>
+</head>
+<body>
+<header><strong>Coduri QR pentru mese</strong> <button onclick="window.print()">Printează</button></header>
+<main><p class="muted noprint">Autentificați-vă întâi ca manager în POS. Linkurile de test se pot deschide direct pe telefon sau în alt tab.</p><div id="grid"></div></main>
+<script src="/static/js/common.js"></script>
+<script>
+const loc = location.pathname.split('/')[2];
+fetch(`/api/l/${loc}/qr`, { headers: { 'x-auth': storage(`pos-token:${loc}`) || '' } })
+  .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Autentificați-vă ca manager în POS.'))))
+  .then((tables) => {
+    $('#grid').innerHTML = tables.map((t) => `<div class="box"><h2>${esc(t.name)}</h2>${t.svg}
+      <p>Scanați pentru meniu și comandă</p><p class="noprint"><a href="${esc(t.url)}" target="_blank">deschide (test)</a></p></div>`).join('');
+  })
+  .catch((e) => { $('#grid').textContent = e.message; });
+</script>
+</body>
+</html>

@@ -616,6 +616,7 @@ class Store {
       no,
       type: 'sale',
       refNo: null,
+      reason: '',
       at: Date.now(),
       sessionId,
       tableId: session.tableId,
@@ -958,4 +959,4 @@ class Store {
   }
 }
 
-module.exports = { Store, PosError, vatFromGross, vatBreakdown, lineTotal, hashPin, checkPin, ROLES };
+module.exports = { Store, emptyState, PosError, vatFromGross, vatBreakdown, lineTotal, hashPin, checkPin, ROLES };

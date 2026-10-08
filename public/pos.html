@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POS</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+  #layout { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  #floorBox { flex: 1 1 560px; min-width: 300px; }
+  #panel { flex: 1 1 380px; min-width: 300px; }
+  #floor { width: 100%; height: auto; background: #fff; border: 1px solid #ccc; }
+  #floor .table { cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <strong id="title">POS</strong>
+  <span id="who" class="muted"></span>
+  <nav id="nav" class="row hidden">
+    <button data-view="floor">Plan sală</button>
+    <button data-view="virtual">Pachet / Livrare</button>
+    <button data-view="receipts">Bonuri</button>
+    <button data-view="reports" data-mgr>Rapoarte X / Z</button>
+    <button data-view="menu" data-mgr>Meniu</button>
+    <button data-view="staff" data-mgr>Personal</button>
+    <button data-view="cash" data-mgr>Numerar</button>
+    <button data-view="status">Stare</button>
+    <a id="kdsLink" target="_blank">Bucătărie</a>
+    <a id="barLink" target="_blank">Bar</a>
+    <a id="qrLink" target="_blank" data-mgr>Coduri QR</a>
+    <button id="logout">Ieșire</button>
+  </nav>
+  <span id="stats" class="muted"></span>
+</header>
+<main>
+  <section id="login" class="box" style="max-width:320px">
+    <h2>Autentificare</h2>
+    <form id="loginForm"><input id="pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off" required> <button class="primary">Intră</button></form>
+    <p class="muted">Test: manager 1234 · ospătari 1111 / 2222 · bucătărie 3333</p>
+  </section>
+
+  <section id="view-floor" class="hidden">
+    <div id="layout">
+      <div id="floorBox">
+        <svg id="floor"></svg>
+        <p class="muted">Liberă · <span class="badge" style="background:#cfe6ff">ocupată</span> <span class="badge" style="background:#fd5">comandă nouă</span> <span class="badge" style="background:#f96">cheamă ospătar</span> <span class="badge" style="background:#f66">cere nota</span></p>
+        <div id="feed" class="box"><h3>Evenimente</h3><div id="feedList" class="muted">—</div></div>
+      </div>
+      <div id="panel"><div class="box muted">Selectați o masă din plan.</div></div>
+    </div>
+  </section>
+
+  <section id="view-virtual" class="hidden">
+    <div class="box">
+      <h3>Comandă nouă fără masă</h3>
+      <form id="virtualForm" class="row">
+        <select id="vKind"><option value="takeaway">La pachet</option><option value="delivery">Livrare</option></select>
+        <input id="vName" placeholder="Nume client" maxlength="40">
+        <input id="vPhone" placeholder="Telefon" maxlength="20">
+        <input id="vAddress" placeholder="Adresă (livrare)" maxlength="160" size="30">
+        <button class="primary">Deschide</button>
+      </form>
+    </div>
+    <div id="virtualList"></div>
+  </section>
+
+  <section id="view-receipts" class="hidden"></section>
+  <section id="view-reports" class="hidden"></section>
+  <section id="view-menu" class="hidden"></section>
+  <section id="view-staff" class="hidden"></section>
+  <section id="view-cash" class="hidden"></section>
+  <section id="view-status" class="hidden"></section>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/pos.js"></script>
+</body>
+</html>

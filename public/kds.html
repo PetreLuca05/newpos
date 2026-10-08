@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bucătărie</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>#orders { display: flex; flex-wrap: wrap; gap: 10px; } #orders .box { width: 260px; }</style>
+</head>
+<body>
+<header><strong id="title">Ecran</strong> <a id="switch"></a> <span id="clock" class="muted"></span></header>
+<main>
+  <section id="login" class="box hidden" style="max-width:320px">
+    <form id="loginForm"><input id="pin" type="password" inputmode="numeric" placeholder="PIN" required> <button class="primary">Intră</button></form>
+  </section>
+  <div id="orders"></div>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/static/js/common.js"></script>
+<script>
+const loc = location.pathname.split('/')[2];
+const station = new URLSearchParams(location.search).get('station') === 'bar' ? 'bar' : 'kitchen';
+const socket = io();
+const tokenKey = `pos-token:${loc}`;
+let token = storage(tokenKey);
+let count = 0;
+$('#title').textContent = station === 'bar' ? 'Bar' : 'Bucătărie';
+$('#switch').textContent = station === 'bar' ? '→ Bucătărie' : '→ Bar';
+$('#switch').href = `?station=${station === 'bar' ? 'kitchen' : 'bar'}`;
+
+function render(orders) {
+  if (orders.length > count) beep();
+  count = orders.length;
+  $('#orders').innerHTML = orders.map((o) => {
+    const mins = Math.floor((Date.now() - o.at) / 60000);
+    return `<div class="box" style="${mins >= 15 ? 'border-color:#c33' : ''}">
+      <h3>${esc(o.tableName)}</h3><div class="muted">${o.orderId} · ${fmt.time(o.at)} · ${mins} min</div>
+      <ul>${o.lines.map((l) => `<li><strong>${l.qty} × ${esc(l.name)}</strong>${l.note ? `<br><em>${esc(l.note)}</em>` : ''}</li>`).join('')}</ul>
+      <button class="primary" data-ready="${o.orderId}">Gata</button></div>`;
+  }).join('') || '<p class="muted">Nicio comandă în lucru.</p>';
+}
+
+async function start(pin) {
+  const res = await call(socket, 'staff:login', { loc, pin, token: pin ? undefined : token });
+  token = res.token;
+  storage(tokenKey, token);
+  $('#login').classList.add('hidden');
+  render((await call(socket, 'kds:join', { token, station })).orders);
+}
+socket.on('connect', () => start().catch(() => $('#login').classList.remove('hidden')));
+$('#loginForm').addEventListener('submit', (e) => { e.preventDefault(); start($('#pin').value).catch((err) => toast(err.message)); });
+socket.on('kds:state', render);
+$('#orders').onclick = (e) => {
+  if (e.target.dataset.ready) call(socket, 'kds:ready', { token, orderId: e.target.dataset.ready, station }).catch((err) => toast(err.message));
+};
+setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('ro-RO'); }, 1000);
+</script>
+</body>
+</html>

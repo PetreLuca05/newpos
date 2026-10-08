@@ -10,10 +10,15 @@
 //    https://ec.europa.eu/taxation_customs/tedb/
 //    Folosit pentru: cotele TVA în vigoare în România la o dată (cota standard și cota redusă pentru restaurante).
 //
-// Ambele sunt opționale: dacă nu răspund, aplicația folosește valorile din src/restaurant.js.
+// 3. BNR – cursul de schimb oficial zilnic (XML public): https://www.bnr.ro/nbrfxrates.xml
+//    Folosit pentru: încasare în EUR la cursul zilei, afișare prețuri în EUR.
+//
+// Toate sunt opționale: dacă nu răspund, aplicația folosește valorile din src/restaurant.js.
 
 const ANAF_URL = 'https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva';
 const TEDB_URL = 'https://ec.europa.eu/taxation_customs/tedb/ws/VatRetrievalService';
+
+const BNR_URL = 'https://www.bnr.ro/nbrfxrates.xml';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -148,17 +153,37 @@ function applyVatRates(vatGroups, { standard, restaurant }) {
   return changes;
 }
 
+// ---------- BNR (curs valutar) ----------
+
+function parseBnrRates(xml) {
+  const date = (String(xml).match(/<Cube date="([\d-]+)"/) || [])[1] || null;
+  const rates = {};
+  for (const m of String(xml).matchAll(/<Rate currency="([A-Z]{3})"(?: multiplier="(\d+)")?>([\d.]+)<\/Rate>/g)) {
+    rates[m[1]] = Number(m[3]) / Number(m[2] || 1);
+  }
+  return { date, rates };
+}
+
+async function fetchBnrRates({ fetchImpl = globalThis.fetch } = {}) {
+  const res = await fetchImpl(BNR_URL, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`BNR HTTP ${res.status}`);
+  return parseBnrRates(await res.text());
+}
+
 // Keeps a status object the POS can show (sursa valorilor, ultima verificare, erori).
 class LegalSync {
-  constructor({ restaurant, vatGroups, anaf = new AnafClient(), fetchImpl = globalThis.fetch, log = console }) {
-    this.restaurant = restaurant;
+  // locations: prepared configs (each has cui, company, vatGroups shared by reference)
+  constructor({ locations, vatGroups, fallbackEurRate = 5.0, anaf = new AnafClient(), fetchImpl = globalThis.fetch, log = console }) {
+    this.locations = locations;
     this.vatGroups = vatGroups;
     this.anaf = anaf;
     this.fetch = fetchImpl;
     this.log = log;
+    this.fx = { EUR: Number(process.env.EUR_RATE) || fallbackEurRate, date: null, source: 'config' };
     this.status = {
       vat: { source: 'config', checkedAt: null, error: null, changes: [] },
       company: { source: 'config', checkedAt: null, error: null },
+      fx: { source: 'config', checkedAt: null, error: null },
     };
   }
 
@@ -174,30 +199,54 @@ class LegalSync {
     }
   }
 
+  // Updates company data (denumire, sediu social, Nr. Reg. Com., plătitor TVA) for every location.
+  // The location's own address (punct de lucru) is kept; the registered office goes to registeredAddress.
   async syncCompany() {
     try {
-      const info = await this.anaf.lookup(this.restaurant.cui);
-      if (!info) throw new Error('CUI negăsit la ANAF');
-      Object.assign(this.restaurant, {
-        company: info.name || this.restaurant.company,
-        address: info.address || this.restaurant.address,
-        regCom: info.regCom || this.restaurant.regCom,
-        cui: `${info.vatPayer ? 'RO' : ''}${info.cui}`,
-        vatPayer: info.vatPayer,
-      });
-      this.status.company = { source: 'ANAF', checkedAt: Date.now(), error: null, inactive: info.inactive };
+      const byCui = new Map();
+      for (const loc of this.locations) {
+        const cui = isValidCui(loc.cui) ? normalizeCui(loc.cui) : null;
+        if (!cui) this.log.warn(`[legal] ${loc.id}: CUI invalid (${loc.cui}), nu verific la ANAF`);
+        if (cui) byCui.set(cui, [...(byCui.get(cui) || []), loc]);
+      }
+      for (const [cui, locs] of byCui) {
+        const info = await this.anaf.lookup(cui);
+        if (!info) throw new Error(`CUI ${cui} negăsit la ANAF`);
+        for (const loc of locs) {
+          Object.assign(loc, {
+            company: info.name || loc.company,
+            registeredAddress: info.address,
+            regCom: info.regCom || loc.regCom,
+            cui: `${info.vatPayer ? 'RO' : ''}${info.cui}`,
+            vatPayer: info.vatPayer,
+          });
+        }
+      }
+      this.status.company = { source: 'ANAF', checkedAt: Date.now(), error: null };
     } catch (err) {
       this.status.company = { ...this.status.company, checkedAt: Date.now(), error: err.message };
       this.log.warn('[legal] ANAF indisponibil, folosesc datele firmei din configurare:', err.message);
     }
   }
 
-  async syncAll() {
-    await Promise.all([this.syncVat(), this.syncCompany()]);
+  async syncFx() {
+    try {
+      const { date, rates } = await fetchBnrRates({ fetchImpl: this.fetch });
+      if (!(rates.EUR > 0)) throw new Error('Curs EUR lipsă în răspunsul BNR');
+      this.fx = { EUR: rates.EUR, date, source: 'BNR' };
+      this.status.fx = { source: 'BNR', checkedAt: Date.now(), error: null, date };
+    } catch (err) {
+      this.status.fx = { ...this.status.fx, checkedAt: Date.now(), error: err.message };
+      this.log.warn('[legal] BNR indisponibil, folosesc cursul din configurare:', err.message);
+    }
   }
 
-  // Re-checks once a day (cotele TVA se pot modifica prin lege).
-  start(intervalMs = 24 * 3600 * 1000) {
+  async syncAll() {
+    await Promise.all([this.syncVat(), this.syncCompany(), this.syncFx()]);
+  }
+
+  // Re-checks periodically (cotele TVA se pot modifica prin lege; cursul BNR se publică zilnic ~13:00).
+  start(intervalMs = 6 * 3600 * 1000) {
     this.syncAll();
     this.timer = setInterval(() => this.syncAll(), intervalMs);
     this.timer.unref();
@@ -213,4 +262,6 @@ module.exports = {
   parseTedbResponse,
   applyVatRates,
   fetchVatRates,
+  parseBnrRates,
+  fetchBnrRates,
 };

@@ -1,0 +1,33 @@
+{
+  "name": "newpos",
+  "version": "1.0.0",
+  "description": "POS cu comandă de la masă prin QR (restaurant fictiv pentru testare)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PetreLuca05/newpos.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/PetreLuca05/newpos/issues"
+  },
+  "homepage": "https://github.com/PetreLuca05/newpos#readme",
+  "dependencies": {
+    "express": "^4.22.3",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true
+}

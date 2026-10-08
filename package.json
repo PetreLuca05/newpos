@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/PetreLuca05/newpos#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
     "express": "^4.22.3",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4"
